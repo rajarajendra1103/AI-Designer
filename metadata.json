@@ -1,0 +1,5 @@
+{
+  "name": "AI-Designer: AI CAD Automation",
+  "description": "An intelligent design automation system where users describe a structure or product in natural language. The AI converts this description into a conceptual 3D model which can be viewed and edited.",
+  "requestFramePermissions": []
+}
