@@ -1,8 +1,10 @@
+
 import React, { useState, useCallback } from 'react';
 import { Project } from '../types';
 import ThreeDViewer from './ThreeDViewer';
 import { refineDesign } from '../services/geminiService';
 import { EditIcon, GeneratorIcon } from '../constants';
+import { Box, Circle, Maximize, RotateCw, Layers, Scissors, PenTool, Grid, Triangle, Move, RefreshCcw, Scale, History, Building, Ruler, Tag } from 'lucide-react';
 
 // Custom hook for managing state history with undo/redo
 const useHistory = <T,>(initialState: T) => {
@@ -50,6 +52,58 @@ interface ManualEditorProps {
   onSave: (updatedProject: Project) => void;
 }
 
+const MODELING_TOOLS = [
+    {
+        id: 'solid',
+        label: 'Solid',
+        tools: [
+            { name: 'Extrude', icon: <Maximize className="w-4 h-4" />, prompt: 'Extrude the selected geometry by 5cm.' },
+            { name: 'Revolve', icon: <RotateCw className="w-4 h-4" />, prompt: 'Revolve the profile 360 degrees around the central axis.' },
+            { name: 'Fillet', icon: <Circle className="w-4 h-4" />, prompt: 'Apply a 0.5cm fillet to all sharp edges.' },
+            { name: 'Chamfer', icon: <Triangle className="w-4 h-4" />, prompt: 'Apply a 0.5cm chamfer to edges.' },
+            { name: 'Shell', icon: <Box className="w-4 h-4" />, prompt: 'Shell the object with a 0.2cm wall thickness.' },
+            { name: 'Sweep', icon: <Move className="w-4 h-4" />, prompt: 'Sweep the profile along the selected path.' },
+        ]
+    },
+    {
+        id: 'surface',
+        label: 'Surface',
+        tools: [
+            { name: 'Loft', icon: <Layers className="w-4 h-4" />, prompt: 'Create a loft between the sections.' },
+            { name: 'Patch', icon: <Grid className="w-4 h-4" />, prompt: 'Patch the open surface boundary.' },
+            { name: 'Stitch', icon: <Scissors className="w-4 h-4" />, prompt: 'Stitch surfaces into a solid body.' },
+            { name: 'Extend', icon: <Maximize className="w-4 h-4" />, prompt: 'Extend surface edges by 5mm.' },
+        ]
+    },
+    {
+        id: 'mesh',
+        label: 'Mesh',
+        tools: [
+            { name: 'To Solid', icon: <Box className="w-4 h-4" />, prompt: 'Convert mesh to solid body.' },
+            { name: 'Clean', icon: <RefreshCcw className="w-4 h-4" />, prompt: 'Clean and repair mesh data.' },
+            { name: 'Sculpt', icon: <PenTool className="w-4 h-4" />, prompt: 'Organic sculpt deformation.' },
+        ]
+    },
+    {
+        id: 'parametric',
+        label: 'Parametric',
+        tools: [
+            { name: 'Dimension', icon: <Scale className="w-4 h-4" />, prompt: 'Add driving dimension constraint.' },
+            { name: 'History', icon: <History className="w-4 h-4" />, prompt: 'Rollback feature history.' },
+        ]
+    },
+    {
+        id: 'aec',
+        label: 'AEC / BIM',
+        tools: [
+            { name: 'Wall Gen', icon: <Building className="w-4 h-4" />, prompt: 'Generate standard 3m high walls from the floor layout.' },
+            { name: 'Add Door', icon: <Layers className="w-4 h-4" />, prompt: 'Insert standard doors at logical entry points.' },
+            { name: 'BIM Tag', icon: <Tag className="w-4 h-4" />, prompt: 'Auto-tag all rooms and calculate areas.' },
+            { name: 'Clash Check', icon: <Ruler className="w-4 h-4" />, prompt: 'Analyze model for structural intersections and clashes.' },
+        ]
+    }
+];
+
 const ManualEditor: React.FC<ManualEditorProps> = ({ project, onBack, onSave }) => {
   const { 
     state: editedProject, 
@@ -77,6 +131,13 @@ const ManualEditor: React.FC<ManualEditorProps> = ({ project, onBack, onSave }) 
     } finally {
       setIsRefining(false);
     }
+  };
+
+  const handleToolClick = (toolPrompt: string) => {
+      setPrompt(prev => {
+          const spacer = prev.length > 0 && !prev.endsWith(' ') ? ' ' : '';
+          return prev + spacer + toolPrompt;
+      });
   };
 
   const handleSave = () => {
@@ -133,13 +194,13 @@ const ManualEditor: React.FC<ManualEditorProps> = ({ project, onBack, onSave }) 
         </div>
         
         {/* AI Refinement Column */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-md flex flex-col">
-            <h3 className="text-lg font-semibold text-brand-text mb-4 flex items-center gap-2">
+        <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-md flex flex-col overflow-y-auto">
+            <h3 className="text-lg font-semibold text-brand-text mb-2 flex items-center gap-2">
                 <span className="text-brand-primary"><GeneratorIcon /></span>
                 AI Refinements
             </h3>
-            <p className="text-sm text-brand-subtext mb-4">
-                Describe the changes you want to make. For example: "Make the walls thicker," "Add windows to the design," or "Change the material to brushed aluminum."
+            <p className="text-sm text-brand-subtext mb-6">
+                Describe changes or use the Modeling Toolkit to perform standard operations.
             </p>
 
             {error && (
@@ -148,15 +209,42 @@ const ManualEditor: React.FC<ManualEditorProps> = ({ project, onBack, onSave }) 
                     <span>{error}</span>
                 </div>
             )}
+
+            {/* Modeling Toolkit */}
+            <div className="mb-6">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Modeling Toolkit</label>
+                <div className="space-y-4">
+                    {MODELING_TOOLS.map((category) => (
+                        <div key={category.id} className="space-y-1">
+                            <div className="text-[10px] font-semibold text-gray-400">{category.label}</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {category.tools.map((tool) => (
+                                    <button
+                                        key={tool.name}
+                                        onClick={() => handleToolClick(tool.prompt)}
+                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:border-gray-300 transition-all text-gray-700 text-left"
+                                    >
+                                        <span className="flex-shrink-0">{tool.icon}</span>
+                                        <span className="truncate">{tool.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
             
-            <div className="space-y-4">
-                <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="e.g., Make it twice as tall and use wood as the primary material..."
-                    className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent transition"
-                    disabled={isRefining}
-                />
+            <div className="space-y-4 mt-auto">
+                <div className="relative">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Prompt</label>
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="e.g., Make it twice as tall and use wood as the primary material..."
+                        className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent transition text-sm"
+                        disabled={isRefining}
+                    />
+                </div>
                 <button
                   onClick={handleRefine}
                   disabled={!prompt || isRefining}

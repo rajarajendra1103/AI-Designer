@@ -1,24 +1,26 @@
+
 import React from 'react';
 import { Sparkles, Loader2 } from "lucide-react";
 
-// FIX: Added default empty string for className prop to prevent type errors.
-const Card = ({ className = '', children }) => (
+interface BaseProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+const Card: React.FC<BaseProps> = ({ className = '', children }) => (
   <div className={`shadow-2xl border-none bg-white/80 backdrop-blur-sm rounded-2xl ${className}`.trim()}>{children}</div>
 );
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardHeader = ({ className = '', children }) => (
+const CardHeader: React.FC<BaseProps> = ({ className = '', children }) => (
   <div className={`p-6 border-b bg-gradient-to-r from-purple-50 to-blue-50 rounded-t-2xl ${className}`.trim()}>{children}</div>
 );
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardTitle = ({ className = '', children }) => (
+const CardTitle: React.FC<BaseProps> = ({ className = '', children }) => (
   <h2 className={`text-lg font-semibold text-gray-900 ${className}`.trim()}>{children}</h2>
 );
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardContent = ({ className = '', children }) => (
+const CardContent: React.FC<BaseProps> = ({ className = '', children }) => (
   <div className={`p-8 ${className}`.trim()}>{children}</div>
 );
-const Progress = ({ value, className }) => (
-  <div className={`w-full bg-gray-200 rounded-full h-2 overflow-hidden ${className}`}>
+const Progress = ({ value, className }: { value: number; className?: string }) => (
+  <div className={`w-full bg-gray-200 rounded-full h-2 overflow-hidden ${className || ''}`}>
     <div 
       className="bg-brand-primary h-2 rounded-full" 
       style={{ width: `${value}%`, transition: 'width 0.5s ease' }}
@@ -26,8 +28,21 @@ const Progress = ({ value, className }) => (
   </div>
 );
 
+interface GenerationProgressProps {
+  progress: number;
+  currentStep: string;
+}
 
-export default function GenerationProgress({ progress, currentStep }) {
+export default function GenerationProgress({ progress, currentStep }: GenerationProgressProps) {
+  // Radius calculation:
+  // Width/Height = 128px (w-32)
+  // Center = 64
+  // Stroke = 8
+  // Radius = 64 - (8/2) = 60
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - progress / 100);
+
   return (
     <Card>
       <CardHeader>
@@ -39,30 +54,50 @@ export default function GenerationProgress({ progress, currentStep }) {
       <CardContent>
         <div className="space-y-6">
           <div className="flex items-center justify-center">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full border-8 border-indigo-100 flex items-center justify-center">
-                <Sparkles className="w-16 h-16 text-brand-primary animate-pulse" />
+            {/* Main Circular Progress Container */}
+            <div className="relative w-32 h-32">
+              
+              {/* Centered Icon */}
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <Sparkles className="w-14 h-14 text-brand-primary animate-pulse" />
               </div>
-              <svg className="absolute top-0 left-0 w-32 h-32 transform -rotate-90">
+
+              {/* SVG Ring */}
+              <svg 
+                className="w-full h-full transform -rotate-90" 
+                viewBox="0 0 128 128"
+              >
+                {/* Background Track */}
                 <circle
                   cx="64"
                   cy="64"
-                  r="52"
+                  r={radius}
                   stroke="currentColor"
                   strokeWidth="8"
                   fill="none"
-                  className="text-brand-primary"
-                  strokeDasharray={`${2 * Math.PI * 52}`}
-                  strokeDashoffset={`${2 * Math.PI * 52 * (1 - progress / 100)}`}
-                  style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                  className="text-indigo-50"
+                />
+                
+                {/* Progress Circle */}
+                <circle
+                  cx="64"
+                  cy="64"
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="none"
+                  className="text-brand-primary transition-all duration-500 ease-out"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
                 />
               </svg>
             </div>
           </div>
 
           <div className="text-center space-y-2">
-            <p className="text-2xl font-bold text-gray-900">{progress}%</p>
-            <p className="text-gray-600 h-5">{currentStep}</p>
+            <p className="text-3xl font-bold text-gray-900">{Math.round(progress)}%</p>
+            <p className="text-gray-600 font-medium animate-pulse">{currentStep}</p>
           </div>
 
           <Progress value={progress} className="h-2" />

@@ -1,13 +1,19 @@
+
 import React from 'react';
 import { Project } from '../types';
 import { Eye, Calendar, Tag, Trash2 } from 'lucide-react';
 import ThumbnailViewer from './ThumbnailViewer';
 
-const Card = ({ className = '', children }) => <div className={`border rounded-xl ${className}`.trim()}>{children}</div>;
-const CardContent = ({ className = '', children }) => <div className={className}>{children}</div>;
-const Badge = ({ className = '', children }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`.trim()}>{children}</span>;
+interface BaseProps {
+  className?: string;
+  children?: React.ReactNode;
+}
 
-const categoryColors = {
+const Card: React.FC<BaseProps> = ({ className = '', children }) => <div className={`border rounded-xl ${className}`.trim()}>{children}</div>;
+const CardContent: React.FC<BaseProps> = ({ className = '', children }) => <div className={className}>{children}</div>;
+const Badge: React.FC<BaseProps> = ({ className = '', children }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`.trim()}>{children}</span>;
+
+const categoryColors: Record<string, string> = {
   architecture: "bg-blue-100 text-blue-800 border-blue-200",
   product: "bg-purple-100 text-purple-800 border-purple-200",
   industrial: "bg-green-100 text-green-800 border-green-200",
@@ -16,15 +22,22 @@ const categoryColors = {
   other: "bg-gray-100 text-gray-800 border-gray-200"
 };
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
   generated: "bg-blue-100 text-blue-700",
   refined: "bg-purple-100 text-purple-700",
   finalized: "bg-green-100 text-green-700"
 };
 
-export default function ProjectCard({ project, viewMode, onSelectProject, onDelete }) {
-  const formatDate = (dateString) => {
+interface ProjectCardProps {
+  project: Project;
+  viewMode: 'grid' | 'list';
+  onSelectProject: (project: Project) => void;
+  onDelete: (projectId: string) => void;
+}
+
+export default function ProjectCard({ project, viewMode, onSelectProject, onDelete }: ProjectCardProps) {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -33,7 +46,7 @@ export default function ProjectCard({ project, viewMode, onSelectProject, onDele
     });
   };
 
-  const formatDateShort = (dateString) => {
+  const formatDateShort = (dateString?: string) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',

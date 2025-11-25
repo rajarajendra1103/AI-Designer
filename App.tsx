@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -6,6 +7,13 @@ import ProjectList from './components/ProjectList';
 import ProjectView from './components/ProjectView';
 import EditProject from './components/EditProject';
 import ManualEditor from './components/ManualEditor';
+import ManufacturingView from './components/ManufacturingView';
+import SimulationStudio from './components/SimulationStudio';
+import ElectronicsLab from './components/ElectronicsLab';
+import AssemblyStudio from './components/AssemblyStudio';
+import AECView from './components/AECView';
+import MediaView from './components/MediaView';
+import Features from './components/Features';
 import { Page, Project } from './types';
 import { INITIAL_PROJECTS } from './constants';
 
@@ -38,10 +46,14 @@ const App: React.FC = () => {
     setCurrentPage('view_project');
   };
 
+  const handleSelectProjectForStudio = (project: Project) => {
+    setCurrentProject(project);
+    // Do not change page, stay in the specific studio
+  };
+
   const handleUpdateProject = (updatedProject: Project) => {
     setProjects(prevProjects => prevProjects.map(p => p.id === updatedProject.id ? updatedProject : p));
     setCurrentProject(updatedProject);
-    setCurrentPage('view_project'); // Go back to view page after saving
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -65,6 +77,8 @@ const App: React.FC = () => {
                   onSelectProject={handleSelectProject} 
                   onDeleteProject={handleDeleteProject}
                 />;
+      case 'features':
+        return <Features />;
       case 'view_project':
         if (currentProject) {
           return <ProjectView 
@@ -72,20 +86,83 @@ const App: React.FC = () => {
                     onBack={() => handleNavigate('projects')} 
                     onEdit={() => handleNavigate('edit_project')}
                     onManualEdit={() => handleNavigate('manual_editor')}
+                    onManufacturing={() => handleNavigate('manufacturing')}
+                    onSimulation={() => handleNavigate('simulation')}
+                    onElectronics={() => handleNavigate('electronics')}
+                    onAssembly={() => handleNavigate('assembly')}
+                    onAEC={() => handleNavigate('aec')}
+                    onMedia={() => handleNavigate('media')}
                     onDelete={handleDeleteProject}
                  />;
         }
-        return null;
+        // Fallback if navigated without project
+        return <ProjectList projects={projects} onSelectProject={handleSelectProject} onDeleteProject={handleDeleteProject} />;
       case 'edit_project':
         if (currentProject) {
-            return <EditProject project={currentProject} onBack={() => handleNavigate('view_project')} onSave={handleUpdateProject} />;
+            return <EditProject 
+                    project={currentProject} 
+                    onBack={() => handleNavigate('view_project')} 
+                    onSave={(p) => { handleUpdateProject(p); handleNavigate('view_project'); }} 
+                   />;
         }
-        return null;
+        return <ProjectList projects={projects} onSelectProject={handleSelectProject} onDeleteProject={handleDeleteProject} />;
       case 'manual_editor':
         if (currentProject) {
-            return <ManualEditor project={currentProject} onBack={() => handleNavigate('view_project')} onSave={handleUpdateProject} />;
+            return <ManualEditor 
+                    project={currentProject} 
+                    onBack={() => handleNavigate('view_project')} 
+                    onSave={(p) => { handleUpdateProject(p); handleNavigate('view_project'); }} 
+                   />;
         }
-        return null;
+        return <ProjectList projects={projects} onSelectProject={handleSelectProject} onDeleteProject={handleDeleteProject} />;
+      case 'manufacturing':
+        return <ManufacturingView 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
+      case 'simulation':
+        return <SimulationStudio 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
+      case 'electronics':
+        return <ElectronicsLab 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
+      case 'assembly':
+        return <AssemblyStudio 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
+      case 'aec':
+        return <AECView 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
+      case 'media':
+        return <MediaView 
+                project={currentProject} 
+                projects={projects}
+                onSelectProject={handleSelectProjectForStudio}
+                onBack={() => handleNavigate('projects')} 
+                onUpdate={handleUpdateProject}
+               />;
       default:
         return <Dashboard projects={projects} onNavigate={handleNavigate} />;
     }
@@ -101,7 +178,7 @@ const App: React.FC = () => {
                 aria-hidden="true"
             ></div>
         )}
-      <main className="flex-1 md:ml-64 overflow-y-auto">
+      <main className="flex-1 md:ml-64 overflow-y-auto h-full">
          <header className="md:hidden sticky top-0 bg-white/80 backdrop-blur-sm z-20 border-b p-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <div className="bg-gradient-to-br from-brand-secondary to-brand-primary p-2 rounded-lg">

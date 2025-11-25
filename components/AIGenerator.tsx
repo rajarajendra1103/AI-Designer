@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { GoogleGenAI, Type } from "@google/genai";
 import { Project, PrimitiveType } from '../types';
@@ -6,31 +7,46 @@ import { Sparkles, Loader2, Lightbulb, ArrowRight } from "lucide-react";
 import { generateDesign } from "../services/geminiService";
 
 // --- Helper UI Components ---
-// FIX: Added default empty string for className prop to prevent type errors.
-const Card = ({ className = '', children }) => <div className={`border-none ${className}`.trim()}>{children}</div>;
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardContent = ({ className = '', children }) => <div className={className}>{children}</div>;
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardHeader = ({ className = '', children }) => <div className={className}>{children}</div>;
-// FIX: Added default empty string for className prop to prevent type errors.
-const CardTitle = ({ className = '', children }) => <h3 className={className}>{children}</h3>;
-// FIX: Added default empty string for className prop to prevent type errors.
-const Label = ({ htmlFor, className = '', children }) => <label htmlFor={htmlFor} className={`text-sm font-medium text-gray-700 ${className}`.trim()}>{children}</label>;
-const Input = (props) => <input {...props} className={`mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm ${props.className || ''}`.trim()} />;
-const Textarea = (props) => <textarea {...props} className={`mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm ${props.className || ''}`.trim()} />;
-const Button = ({ className = '', children, ...props }) => <button {...props} className={`inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${className}`.trim()}>{children}</button>;
-const Alert = ({ className = '', children }) => <div className={`p-4 rounded-md ${className}`.trim()}>{children}</div>;
-const AlertDescription = ({ className = '', children }) => <div className={`text-sm ${className}`.trim()}>{children}</div>;
-const Select = ({ value, onValueChange, children }) => <select value={value} onChange={e => onValueChange(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md">{children}</select>;
-const SelectItem = ({ value, children }) => <option value={value}>{children}</option>;
+interface BaseProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+const Card: React.FC<BaseProps> = ({ className = '', children }) => <div className={`border-none ${className}`.trim()}>{children}</div>;
+const CardContent: React.FC<BaseProps> = ({ className = '', children }) => <div className={className}>{children}</div>;
+const CardHeader: React.FC<BaseProps> = ({ className = '', children }) => <div className={className}>{children}</div>;
+const CardTitle: React.FC<BaseProps> = ({ className = '', children }) => <h3 className={className}>{children}</h3>;
+const Label: React.FC<BaseProps & { htmlFor: string }> = ({ htmlFor, className = '', children }) => <label htmlFor={htmlFor} className={`text-sm font-medium text-gray-700 ${className}`.trim()}>{children}</label>;
+const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} className={`mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm ${props.className || ''}`.trim()} />;
+const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} className={`mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm ${props.className || ''}`.trim()} />;
+const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & BaseProps> = ({ className = '', children, ...props }) => <button {...props} className={`inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${className}`.trim()}>{children}</button>;
+const Alert: React.FC<BaseProps> = ({ className = '', children }) => <div className={`p-4 rounded-md ${className}`.trim()}>{children}</div>;
+const AlertDescription: React.FC<BaseProps> = ({ className = '', children }) => <div className={`text-sm ${className}`.trim()}>{children}</div>;
+const Select = ({ value, onValueChange, children }: { value: string, onValueChange: (val: string) => void, children: React.ReactNode }) => <select value={value} onChange={e => onValueChange(e.target.value)} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md">{children}</select>;
+const SelectItem = ({ value, children }: { value: string, children: React.ReactNode }) => <option value={value}>{children}</option>;
 
 // --- Sub-components for AIGenerator ---
 
 const examples = [
   {
+    name: "Modern Minimalist Home",
+    description: "A two-story minimalist house with large floor-to-ceiling windows, flat roof, and open floor plan. Dimensions: 15m x 12m footprint. Include a cantilevered balcony on the second floor and a wooden deck.",
+    category: "architecture"
+  },
+  {
+    name: "Smart Speaker Design",
+    description: "A spherical smart speaker with a fabric mesh texture, top-mounted control buttons, and a glowing LED ring base. Diameter: 15cm. Includes a power port on the back and rubber feet.",
+    category: "product"
+  },
+  {
     name: "Industrial Warehouse",
     description: "A large industrial warehouse building with steel frame construction. Dimensions: 50m length, 30m width, 12m height. Include loading docks, overhead crane system, and skylights for natural lighting. Concrete foundation with metal siding.",
     category: "industrial"
+  },
+  {
+    name: "Gear Assembly",
+    description: "Mechanical gear assembly with 5 interlocking gears. Main drive gear: 200mm diameter with 40 teeth. Four smaller gears: 100mm diameter with 20 teeth each. Made of stainless steel with 20mm shaft diameter. Include mounting plate.",
+    category: "mechanical"
   },
   {
     name: "Ergonomic Office Desk",
@@ -38,13 +54,37 @@ const examples = [
     category: "furniture"
   },
   {
-    name: "Gear Assembly",
-    description: "Mechanical gear assembly with 5 interlocking gears. Main drive gear: 200mm diameter with 40 teeth. Four smaller gears: 100mm diameter with 20 teeth each. Made of stainless steel with 20mm shaft diameter. Include mounting plate.",
-    category: "mechanical"
+     name: "Sci-Fi Drone Concept",
+     description: "A futuristic quadcopter drone with enclosed rotors, a central camera pod, and landing skids. Streamlined aerodynamic body with sensor arrays. Dimensions: 40cm x 40cm.",
+     category: "other"
+  },
+  {
+     name: "Retro Handheld Console",
+     description: "A classic handheld gaming device. Horizontal layout with a screen in the center, D-pad on the left, and A/B buttons on the right. Dimensions: 15cm wide, 8cm tall, 2cm thick. Include a cartridge slot on top and a battery compartment on the back.",
+     category: "product"
+  },
+  {
+    name: "Portable Bluetooth Speaker",
+    description: "A waterproof cylindrical speaker with woven fabric grille and rugged rubber bumpers. Dimensions: 20cm height, 8cm diameter. Integrated carabiner clip on top and large control buttons on the spine.",
+    category: "product"
+  },
+  {
+    name: "IoT Sensor PCB",
+    description: "A custom printed circuit board (PCB) for a smart home sensor node. Dimensions: 50mm x 30mm. Features a central microcontroller, a temperature/humidity sensor module, a coin cell battery holder, and a small chip antenna. Includes 4 mounting holes at the corners.",
+    category: "electronics"
+  },
+  {
+    name: "Sci-Fi Game Asset",
+    description: "A futuristic loot crate for a video game. Hexagonal prism shape with reinforced chamfered corners, recessed glowing panels on the sides, and a digital keypad on the lid. Optimized geometry for real-time rendering. Dimensions: 80cm x 80cm x 60cm.",
+    category: "media"
   }
 ];
 
-function ExamplePrompts({ onExampleClick }) {
+interface ExamplePromptsProps {
+  onExampleClick: (example: any) => void;
+}
+
+function ExamplePrompts({ onExampleClick }: ExamplePromptsProps) {
   return (
     <Card className="mb-6 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl">
       <CardContent className="p-6">
@@ -57,10 +97,13 @@ function ExamplePrompts({ onExampleClick }) {
             <button
               key={index}
               onClick={() => onExampleClick(example)}
-              className="text-left p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-brand-primary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary"
+              className="text-left p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-brand-primary hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary h-full flex flex-col"
             >
-              <p className="font-semibold text-gray-900 mb-2">{example.name}</p>
-              <p className="text-sm text-gray-600 line-clamp-3">{example.description}</p>
+              <div className="flex justify-between items-start w-full mb-2">
+                <p className="font-semibold text-gray-900">{example.name}</p>
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600 capitalize">{example.category}</span>
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-3 flex-grow">{example.description}</p>
             </button>
           ))}
         </div>
@@ -69,7 +112,12 @@ function ExamplePrompts({ onExampleClick }) {
   );
 }
 
-function DescriptionInput({ value, onChange }) {
+interface DescriptionInputProps {
+  value: string;
+  onChange: (val: string) => void;
+}
+
+function DescriptionInput({ value, onChange }: DescriptionInputProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor="description" className="text-base font-semibold">
@@ -92,14 +140,18 @@ function DescriptionInput({ value, onChange }) {
 
 // --- Main AIGenerator Component ---
 
-export default function AIGenerator({ onGenerationComplete }) {
+interface AIGeneratorProps {
+  onGenerationComplete: (project: Project) => void;
+}
+
+export default function AIGenerator({ onGenerationComplete }: AIGeneratorProps) {
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("product");
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!projectName || !description) return;
@@ -128,14 +180,14 @@ export default function AIGenerator({ onGenerationComplete }) {
         onGenerationComplete(newProject);
       }, 500);
 
-    } catch (e) {
+    } catch (e: any) {
       setIsGenerating(false);
       setError(e.message || "An error occurred during generation. Please try again with a more detailed description including specific dimensions.");
       console.error("Generation error:", e);
     }
   };
 
-  const handleExampleClick = (example) => {
+  const handleExampleClick = (example: any) => {
     setProjectName(example.name);
     setDescription(example.description);
     setCategory(example.category);
@@ -192,6 +244,8 @@ export default function AIGenerator({ onGenerationComplete }) {
                       <SelectItem value="industrial">Industrial</SelectItem>
                       <SelectItem value="mechanical">Mechanical</SelectItem>
                       <SelectItem value="furniture">Furniture</SelectItem>
+                      <SelectItem value="electronics">Electronics</SelectItem>
+                      <SelectItem value="media">Media & VFX</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </Select>
                   </div>
